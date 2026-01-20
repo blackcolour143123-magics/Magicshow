@@ -1,0 +1,70 @@
+CREATE TABLE ACCTMASTER (
+    accno INT PRIMARY KEY,
+    name CHAR(25),
+    balance NUMBER(10)
+);
+
+CREATE TABLE ACCTTRAN (
+    accno INT REFERENCES ACCTMASTER(accno),
+    tran_date DATE DEFAULT SYSDATE,
+    deb_cred CHAR(7),
+    flag CHAR(1) DEFAULT 'N',
+    amount NUMBER(10)
+);
+
+INSERT INTO ACCTMASTER
+VALUES (&accno, '&name', &balance);
+
+INSERT INTO ACCTTRAN
+VALUES (&accno, SYSDATE, '&deb_cred', 'N', &amt);
+
+
+
+
+
+
+DECLARE
+    no     INT;
+    trdate DATE;
+    dc     CHAR(7);
+    fl     CHAR(1);
+    a      NUMBER(10);
+
+    CURSOR ctrn IS
+        SELECT accno, tran_date, deb_cred, flag, amount
+        FROM ACCTTRAN
+        WHERE flag = 'N';
+BEGIN
+    OPEN ctrn;
+
+    LOOP
+        FETCH ctrn INTO no, trdate, dc, fl, a;
+        EXIT WHEN ctrn%NOTFOUND;
+
+        IF dc = 'Debit' THEN
+            UPDATE ACCTMASTER
+            SET balance = balance - a
+            WHERE accno = no;
+
+            UPDATE ACCTTRAN
+            SET flag = 'Y'
+            WHERE accno = no
+            AND tran_date = trdate;
+
+        ELSIF dc = 'Credit' THEN
+            UPDATE ACCTMASTER
+            SET balance = balance + a
+            WHERE accno = no;
+
+            UPDATE ACCTTRAN
+            SET flag = 'Y'
+            WHERE accno = no
+            AND tran_date = trdate;
+        END IF;
+
+    END LOOP;
+
+    CLOSE ctrn;
+    COMMIT;
+END;
+/

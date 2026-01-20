@@ -1,0 +1,113 @@
+CREATE TABLE student (
+    rollno INT,
+    name CHAR(25),
+    tot_marks NUMBER(10),
+    trade CHAR(25)
+);
+
+CREATE TABLE IT (
+    rollno INT,
+    name CHAR(25),
+    tot_marks NUMBER(10),
+    trade CHAR(25),
+    rank NUMBER(3)
+);
+
+CREATE TABLE CS (
+    rollno INT,
+    name CHAR(25),
+    tot_marks NUMBER(10),
+    trade CHAR(25),
+    rank NUMBER(3)
+);
+
+
+
+
+
+
+
+
+DECLARE
+    rno INT;
+    nam CHAR(25);
+    tot NUMBER(10);
+    trd CHAR(25);
+    rnk NUMBER(3);
+    mx  NUMBER(10);
+
+    CURSOR curr IS
+        SELECT rollno, name, tot_marks, trade FROM student;
+
+    CURSOR cit IS
+        SELECT rollno, name, tot_marks, trade, rank FROM IT;
+
+    CURSOR css IS
+        SELECT rollno, name, tot_marks, trade, rank FROM CS;
+
+    i NUMBER(4);
+BEGIN
+    DELETE FROM IT;
+    DELETE FROM CS;
+
+    OPEN curr;
+    LOOP
+        FETCH curr INTO rno, nam, tot, trd;
+        EXIT WHEN curr%NOTFOUND;
+
+        IF trd = 'IT' THEN
+            INSERT INTO IT VALUES (rno, nam, tot, trd, NULL);
+        ELSIF trd = 'CS' THEN
+            INSERT INTO CS VALUES (rno, nam, tot, trd, NULL);
+        END IF;
+    END LOOP;
+    CLOSE curr;
+    COMMIT;
+
+    -- Assign Rank for CS
+    i := 1;
+    UPDATE CS SET rank = NULL;
+
+    OPEN css;
+    LOOP
+        FETCH css INTO rno, nam, tot, trd, rnk;
+        EXIT WHEN css%NOTFOUND;
+
+        SELECT MAX(tot_marks) INTO mx
+        FROM CS
+        WHERE rank IS NULL;
+
+        UPDATE CS
+        SET rank = i
+        WHERE tot_marks = mx
+        AND rank IS NULL;
+
+        i := i + 1;
+    END LOOP;
+    CLOSE css;
+    COMMIT;
+
+    -- Assign Rank for IT
+    i := 1;
+    UPDATE IT SET rank = NULL;
+
+    OPEN cit;
+    LOOP
+        FETCH cit INTO rno, nam, tot, trd, rnk;
+        EXIT WHEN cit%NOTFOUND;
+
+        SELECT MAX(tot_marks) INTO mx
+        FROM IT
+        WHERE rank IS NULL;
+
+        UPDATE IT
+        SET rank = i
+        WHERE tot_marks = mx
+        AND rank IS NULL;
+
+        i := i + 1;
+    END LOOP;
+    CLOSE cit;
+    COMMIT;
+END;
+/
